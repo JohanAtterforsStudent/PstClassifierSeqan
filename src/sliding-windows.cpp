@@ -35,6 +35,7 @@ struct input_arguments {
   std::filesystem::path outpath{};
   std::filesystem::path sequence_list{};
   double pseudo_count_amount{1.0};
+  int set_size{-1};
   int window_size{300};
 };
 
@@ -208,7 +209,7 @@ int main(int argc, char *argv[]) {
       arguments.filepath.extension() == ".hdf5") {
 
     HighFive::File file{arguments.filepath, HighFive::File::ReadOnly};
-    trees = get_trees(file, arguments.pseudo_count_amount);
+    trees = get_trees(file, arguments.pseudo_count_amount, arguments.set_size);
   } else if (arguments.filepath.extension() == ".tree" ||
              arguments.filepath.extension() == ".bintree") {
     pst::ProbabilisticSuffixTreeMap<seqan3::dna5> tree{

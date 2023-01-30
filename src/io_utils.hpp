@@ -12,7 +12,7 @@
 using tree_t = pst::ProbabilisticSuffixTreeMap<seqan3::dna5>;
 
 std::vector<tree_t> get_trees(HighFive::File &file,
-                              const double pseudo_count_amount) {
+                              const double pseudo_count_amount, const int set_size) {
   const std::string DATASET_NAME("signatures");
 
   HighFive::DataSet dataset = file.getDataSet(DATASET_NAME);
@@ -27,7 +27,13 @@ std::vector<tree_t> get_trees(HighFive::File &file,
       indicators::option::ShowRemainingTime{true}};
 
   std::vector<tree_t> trees{};
-  ulong n_trees = dataset.getDimensions()[0];
+  ulong n_trees = 0;
+  if (set_size == -1){
+    n_trees = dataset.getDimensions()[0];
+  }
+  else {
+    n_trees = set_size;
+  }
   for (ulong i = 0; i < n_trees; i++) {
     dataset.select(HighFive::ElementSet({i})).read(result_string_list);
     //    std::cout << result_string_list[0] << std::endl;
@@ -42,22 +48,27 @@ std::vector<tree_t> get_trees(HighFive::File &file,
 
 std::vector<tree_t>
 get_trees_from_directory(const std::filesystem::path &directory,
-                         const double pseudo_count_amount) {
+                         const double pseudo_count_amount, const int set_size) {
   std::vector<tree_t> trees{};
+  int i = 0;
+  bool limited = true;
+  if (set_size == -1) limited = false;
   for (auto const &dir_entry : std::filesystem::directory_iterator{directory}) {
     trees.push_back(tree_t{dir_entry.path(), pseudo_count_amount});
+    i++;
+    if(limited && i >= set_size) break;
   }
 
   return trees;
 }
 
 std::vector<tree_t> get_trees(std::filesystem::path &path,
-                              const double pseudo_count_amount) {
+                              const double pseudo_count_amount, const int set_size) {
   if (std::filesystem::is_directory(path)) {
-    return get_trees_from_directory(path, pseudo_count_amount);
+    return get_trees_from_directory(path, pseudo_count_amount, set_size);
   } else if (path.extension() == ".h5" || path.extension() == ".hdf5") {
     HighFive::File file{path, HighFive::File::ReadOnly};
-    return get_trees(file, pseudo_count_amount);
+    return get_trees(file, pseudo_count_amount, set_size);
   } else if (path.extension() == ".tree" || path.extension() == ".bintree") {
     pst::ProbabilisticSuffixTreeMap<seqan3::dna5> tree{path,
                                                        pseudo_count_amount};

@@ -41,6 +41,7 @@ struct input_arguments {
   std::filesystem::path filepath_to{""};
   std::filesystem::path scores{""};
   double pseudo_count_amount{1.0};
+  int set_size{-1};
 };
 
 input_arguments parse_cli_arguments(int argc, char *argv[]) {
@@ -63,6 +64,10 @@ input_arguments parse_cli_arguments(int argc, char *argv[]) {
   parser.add_option(arguments.pseudo_count_amount, 'm', "pseudo-count-amount",
                     "Size of pseudo count for probability estimation. See e.g. "
                     "https://en.wikipedia.org/wiki/Additive_smoothing .");
+
+  // TODO Change "a" to a better name
+  parser.add_option(arguments.set_size, 'a', "set-size",
+                    "Number of VLMCs to compute distance function on.");
 
   parser.add_option(
       arguments.distance_name, 'n', "distance-name",
@@ -307,13 +312,13 @@ int main(int argc, char *argv[]) {
       parse_distance_function(arguments);
 
   std::vector<tree_t> trees =
-      get_trees(arguments.filepath, arguments.pseudo_count_amount);
+      get_trees(arguments.filepath, arguments.pseudo_count_amount, arguments.set_size);
   std::vector<tree_t> trees_to;
 
   if (arguments.filepath_to.empty()) {
     trees_to = trees;
   } else {
-    trees_to = get_trees(arguments.filepath_to, arguments.pseudo_count_amount);
+    trees_to = get_trees(arguments.filepath_to, arguments.pseudo_count_amount, arguments.set_size);
   }
 
   matrix_t distances =

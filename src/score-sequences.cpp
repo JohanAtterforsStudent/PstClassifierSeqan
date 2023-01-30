@@ -34,6 +34,7 @@ struct input_arguments {
   std::filesystem::path outpath{};
   std::filesystem::path sequence_list{};
   double pseudo_count_amount{1.0};
+  int set_size{-1};
 };
 
 input_arguments parse_cli_arguments(int argc, char *argv[]) {
@@ -181,7 +182,7 @@ int main(int argc, char *argv[]) {
   input_arguments arguments = parse_cli_arguments(argc, argv);
 
   std::vector<tree_t> trees =
-      get_trees(arguments.filepath, arguments.pseudo_count_amount);
+      get_trees(arguments.filepath, arguments.pseudo_count_amount, arguments.set_size);
 
   if (!std::filesystem::exists(arguments.filepath)) {
     std::cerr << "Error: " << arguments.filepath << " is not a file.";
