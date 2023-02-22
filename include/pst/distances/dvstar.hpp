@@ -9,6 +9,7 @@
 #include <functional>
 #include <numeric>
 #include <math.h>
+#include <chrono>
 
 #include "seqan3/alphabet/concept.hpp"
 #include "seqan3/alphabet/nucleotide/dna5.hpp"
@@ -16,10 +17,11 @@
 #include "../probabilistic_suffix_tree_map.hpp"
 #include "composition_vectors.hpp"
 
-static int nr_get_component = 0;
-static int nr_core_dvstar_f = 0;
-static int nr_contextsize_less_eq_background_order = 0;
-static int nr_valid_characters = 0;
+int nr_get_component = 0;
+int nr_core_dvstar_f = 0;
+int nr_contextsize_less_eq_background_order = 0;
+int nr_valid_characters = 0;
+int total_time_get_comp = 0;
 
 namespace pst::distances::details::dvstar {
 template <seqan3::alphabet alphabet_t>
@@ -110,11 +112,16 @@ core_dvstar_f(ProbabilisticSuffixTreeMap<alphabet_t> &left,
   std::array<std::vector<double>, 2> components{};
 
   for (auto &char_rank : left.valid_characters) {
+    auto begin_get_comp = std::chrono::steady_clock::now();
     double left_component_value =
         get_component(left, left_v, context, left_background_v, char_rank);
 
     double right_component_value =
         get_component(right, right_v, context, right_background_v, char_rank);
+    
+    auto end_get_comp = std::chrono::steady_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end_get_comp - begin_get_comp).count() / 2;
+    total_time_get_comp += time;
 
     components[0].push_back(left_component_value);
     components[1].push_back(right_component_value);
@@ -133,6 +140,7 @@ inline double core_dvstar(ProbabilisticSuffixTreeMap<alphabet_t> &left,
   double left_norm = 0.0;
   double right_norm = 0.0;
 
+  auto begin_it_incl = std::chrono::steady_clock::now();
   pst::distances::details::iterate_included_in_both<alphabet_t>(
       left, right, [&](auto &context, auto &left_v, auto &right_v) {
         auto [left_components, right_components] = core_dvstar_f<alphabet_t>(
@@ -144,7 +152,18 @@ inline double core_dvstar(ProbabilisticSuffixTreeMap<alphabet_t> &left,
           right_norm += std::pow(right_components[i], 2.0);
         }
       });
+  auto end_it_incl = std::chrono::steady_clock::now();
+  auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end_it_incl - begin_it_incl).count();
+
+  std::cout << std::endl;
   std::cout << "get_component() called " << nr_get_component << std::endl;
+  std::cout << "Time spent in get_component : " << total_time_get_comp << " ns" << std::endl;
+  std::cout << "Avg time spent in get_component : " << total_time_get_comp / nr_get_component << " ns" << std::endl;
+  std::cout << "Time spent in iterate_included_in_both : " << time << " ns" << std::endl;
+  std::cout << "context.size <= background_order : " << nr_contextsize_less_eq_background_order << " times" << std::endl;
+  nr_get_component = 0;
+  nr_contextsize_less_eq_background_order = 0;
+  total_time_get_comp = 0;
   return normalise_dvstar(dot_product, left_norm, right_norm);
 }
 

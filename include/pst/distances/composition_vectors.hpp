@@ -240,6 +240,7 @@ void iterate_included_in_both(
                              const hashmap_value<alphabet_t> &,
                              const hashmap_value<alphabet_t> &)> &f) {
   int sum_time = 0;
+  int sum_f = 0;
   nr_iterate_included_in_both++;
   for (auto &[context, left_v] : left.counts) {
 
@@ -252,15 +253,21 @@ void iterate_included_in_both(
 
     if (included_in_both) {
       nr_is_actually_included++;
+      auto begin_f_apply = std::chrono::steady_clock::now();
       f(context, left_v, right_v);
+      auto end_f_apply = std::chrono::steady_clock::now();
+      int time_f = std::chrono::duration_cast<std::chrono::nanoseconds>(end_f_apply - begin_f_apply).count();
+      sum_f += time_f;
     }
   }
   std::cout << "----------------------------------- " << std::endl;
   std::cout << "times iterate_included_in_both : " << nr_iterate_included_in_both << std::endl;
   std::cout << "times is_included_in_both : " << nr_is_included_in_both << std::endl;
   std::cout << "times actually_included : " << nr_is_actually_included << std::endl;
-  std::cout << "Total time : " << sum_time << " ns "<< std::endl;
-  std::cout << "Avg time for checking is_included_in_both : " << sum_time / nr_is_included_in_both << " ns" << std::endl;
+  std::cout << "Total time checking membership: " << sum_time << " ns "<< std::endl;
+  std::cout << "Avg time for checking membership : " << sum_time / nr_is_included_in_both << " ns" << std::endl;
+  std::cout << "Total time applying f : " << sum_f << " ns "<< std::endl;
+  std::cout << "Avg time for applying f : " << sum_f / nr_is_actually_included << " ns" << std::endl;
   nr_is_included_in_both = 0;
   nr_is_actually_included = 0;
 }
