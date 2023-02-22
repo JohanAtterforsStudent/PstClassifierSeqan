@@ -16,6 +16,11 @@
 #include "../probabilistic_suffix_tree_map.hpp"
 #include "composition_vectors.hpp"
 
+static int nr_get_component = 0;
+static int nr_core_dvstar_f = 0;
+static int nr_contextsize_less_eq_background_order = 0;
+static int nr_valid_characters = 0;
+
 namespace pst::distances::details::dvstar {
 template <seqan3::alphabet alphabet_t>
 double get_component(ProbabilisticSuffixTreeMap<alphabet_t> &tree,
@@ -23,6 +28,7 @@ double get_component(ProbabilisticSuffixTreeMap<alphabet_t> &tree,
                      const std::string &context,
                      const hashmap_value<alphabet_t> &background_v,
                      const size_t char_rank) {
+  nr_get_component++;
   const double background_prob =
       background_v.next_symbol_probabilities[char_rank];
   if (background_prob == 0.0) {
@@ -83,7 +89,9 @@ core_dvstar_f(ProbabilisticSuffixTreeMap<alphabet_t> &left,
               const size_t background_order, const std::string &context,
               const hashmap_value<alphabet_t> &left_v,
               const hashmap_value<alphabet_t> &right_v) {
+  nr_core_dvstar_f++;
   if (context.size() <= background_order) {
+    nr_contextsize_less_eq_background_order++;
     return {};
   }
 
@@ -111,7 +119,8 @@ core_dvstar_f(ProbabilisticSuffixTreeMap<alphabet_t> &left,
     components[0].push_back(left_component_value);
     components[1].push_back(right_component_value);
   }
-
+  //std::cout << "nr_valid_characters : " << nr_get_component << std::endl;
+  nr_valid_characters = 0;
   return components;
 }
 
@@ -135,7 +144,7 @@ inline double core_dvstar(ProbabilisticSuffixTreeMap<alphabet_t> &left,
           right_norm += std::pow(right_components[i], 2.0);
         }
       });
-
+  std::cout << "get_component() called " << nr_get_component << std::endl;
   return normalise_dvstar(dot_product, left_norm, right_norm);
 }
 

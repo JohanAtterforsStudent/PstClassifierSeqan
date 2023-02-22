@@ -8,7 +8,11 @@
 
 #include "../probabilistic_suffix_tree_map.hpp"
 #include "negative_log_likelihood.hpp"
+#include <chrono>
 
+int nr_iterate_included_in_both = 0;
+int nr_is_actually_included = 0;
+int nr_is_included_in_both = 0;
 namespace pst::distances::details {
 
 std::string get_background_context(const std::string &state,
@@ -215,6 +219,7 @@ is_included_in_both(ProbabilisticSuffixTreeMap<alphabet_t> &left,
                     ProbabilisticSuffixTreeMap<alphabet_t> &right,
                     const std::string &context,
                     const hashmap_value<alphabet_t> &left_v) {
+  nr_is_included_in_both++;
   bool left_included = left_v.is_included;
   if (left_included) {
     auto right_iter = right.counts.find(context);
@@ -234,14 +239,30 @@ void iterate_included_in_both(
     const std::function<void(const std::string &,
                              const hashmap_value<alphabet_t> &,
                              const hashmap_value<alphabet_t> &)> &f) {
+  int sum_time = 0;
+  nr_iterate_included_in_both++;
   for (auto &[context, left_v] : left.counts) {
+
+    auto begin = std::chrono::steady_clock::now();
     auto [included_in_both, right_v] =
         is_included_in_both(left, right, context, left_v);
+    auto end = std::chrono::steady_clock::now();
+    int time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count();
+    sum_time+=time;
 
     if (included_in_both) {
+      nr_is_actually_included++;
       f(context, left_v, right_v);
     }
   }
+  std::cout << "----------------------------------- " << std::endl;
+  std::cout << "times iterate_included_in_both : " << nr_iterate_included_in_both << std::endl;
+  std::cout << "times is_included_in_both : " << nr_is_included_in_both << std::endl;
+  std::cout << "times actually_included : " << nr_is_actually_included << std::endl;
+  std::cout << "Total time : " << sum_time << " ns "<< std::endl;
+  std::cout << "Avg time for checking is_included_in_both : " << sum_time / nr_is_included_in_both << " ns" << std::endl;
+  nr_is_included_in_both = 0;
+  nr_is_actually_included = 0;
 }
 
 template <seqan3::alphabet alphabet_t>
