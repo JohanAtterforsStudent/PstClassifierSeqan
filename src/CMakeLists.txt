@@ -62,6 +62,12 @@ target_link_libraries(calculate-distances HighFive)
 target_link_libraries(calculate-distances ${HDF5_LIBRARIES})
 target_link_libraries(calculate-distances CountVLMC::CountVLMC)
 
+add_executable(time-benchmark time_benchmark.cpp)
+target_link_libraries(time-benchmark seqan3::seqan3)
+target_link_libraries(time-benchmark Threads::Threads)
+target_link_libraries(time-benchmark HighFive)
+target_link_libraries(time-benchmark ${HDF5_LIBRARIES})
+target_link_libraries(time-benchmark CountVLMC::CountVLMC)
 
 add_executable(pst-sliding-windows sliding-windows.cpp)
 target_link_libraries(pst-sliding-windows seqan3::seqan3)
