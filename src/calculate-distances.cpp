@@ -306,6 +306,24 @@ matrix_t calculate_distances(
   return distances;
 }
 
+std::string get_filename(std::filesystem::path path){
+  if (path.has_filename()){
+    return path.filename().u8string();
+  } else {
+    return path.parent_path().filename().u8string();
+  }
+}
+
+std::string get_group_name(std::string distance_name_with_args, input_arguments arguments){
+  auto in_data = get_filename(arguments.filepath);
+  if (arguments.filepath_to.empty()){
+    return distance_name_with_args + "-" + in_data + "-" + std::to_string(arguments.set_size); 
+  } else {
+    in_data = in_data + "-" + get_filename(arguments.filepath_to);
+    return distance_name_with_args + "-" + in_data + "-" + std::to_string(arguments.set_size);
+  } 
+}
+
 int main(int argc, char *argv[]) {
   input_arguments arguments = parse_cli_arguments(argc, argv);
   const auto [distance_fun, distance_name_with_args] =
@@ -362,13 +380,17 @@ int main(int argc, char *argv[]) {
     }
     auto distance_group = file.getGroup("distances");
 
-    if (!distance_group.exist(distance_name_with_args)) {
+    auto group_name = get_group_name(distance_name_with_args, arguments);
+
+    std::cout << group_name << std::endl;
+
+    if (!distance_group.exist(group_name)) {
       std::vector<size_t> dims{trees.size(), trees_to.size()};
-      distance_group.createDataSet<double>(distance_name_with_args,
+      distance_group.createDataSet<double>(group_name,
                                            HighFive::DataSpace(dims));
     }
 
-    auto distance_data_set = distance_group.getDataSet(distance_name_with_args);
+    auto distance_data_set = distance_group.getDataSet(group_name);
     distance_data_set.write(distances);
   }
 
