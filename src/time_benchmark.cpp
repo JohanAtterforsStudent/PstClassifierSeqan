@@ -109,8 +109,8 @@ std::tuple<std::vector<vlmc::VLMCKmer>, int> get_kmer_vector(std::filesystem::pa
 }
 
 void run_timer(std::string container){
-  std::filesystem::path path_fst{"/home/holmse/thesis/dvstar_thesis/data/one_human_VLMCs/human_genome_1.bintree"};
-  std::filesystem::path path_snd{"/home/holmse/thesis/dvstar_thesis/data/one_human_VLMCs/human_genome_2.bintree"};
+  std::filesystem::path path_fst{"../../../data/one_human_VLMCs/human_genome_1.bintree"};
+  std::filesystem::path path_snd{"../../../data/one_human_VLMCs/human_genome_2.bintree"};
 
   auto fst = get_kmer_vector(path_fst);
   auto snd = get_kmer_vector(path_snd);
