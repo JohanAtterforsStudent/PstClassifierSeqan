@@ -308,20 +308,16 @@ matrix_t calculate_distances(
 
 std::string get_filename(std::filesystem::path path){
   if (path.has_filename()){
-    return path.filename().u8string();
+    return path.parent_path().filename().u8string() + "_" + path.filename().u8string();
   } else {
-    return path.parent_path().filename().u8string();
+    return path.parent_path().parent_path().filename().u8string() + "_" + path.parent_path().filename().u8string();
   }
 }
 
-std::string get_group_name(std::string distance_name_with_args, input_arguments arguments){
+std::string get_group_name(std::string distance_name_with_args, input_arguments arguments){ 
+  auto ret_str = "-set-size-" + std::to_string(arguments.set_size); 
   auto in_data = get_filename(arguments.filepath);
-  if (arguments.filepath_to.empty()){
-    return distance_name_with_args + "-" + in_data + "-" + std::to_string(arguments.set_size); 
-  } else {
-    in_data = in_data + "-" + get_filename(arguments.filepath_to);
-    return distance_name_with_args + "-" + in_data + "-" + std::to_string(arguments.set_size);
-  } 
+  return distance_name_with_args + "-" + in_data + ret_str; 
 }
 
 int main(int argc, char *argv[]) {
@@ -342,14 +338,6 @@ int main(int argc, char *argv[]) {
   matrix_t distances =
       calculate_distances(trees, trees_to, arguments, distance_fun);
 
-  std::vector<std::string> ids{};
-  std::transform(trees.begin(), trees.end(), std::back_inserter(ids),
-                 [](tree_t &tree) -> std::string { return tree.id; });
-
-  std::vector<std::string> ids_to{};
-  std::transform(trees_to.begin(), trees_to.end(), std::back_inserter(ids_to),
-                 [](tree_t &tree) -> std::string { return tree.id; });
-
   if (arguments.scores.empty()) {
     for (int i = 0; i < trees.size(); i++) {
       for (int j = 0; j < trees_to.size(); j++) {
@@ -362,35 +350,20 @@ int main(int argc, char *argv[]) {
     std::cout << "Writing to file..." << std::endl;
     HighFive::File file{arguments.scores, HighFive::File::OpenOrCreate};
 
-    if (!file.exist("ids")) {
-      file.createDataSet<std::string>("ids", HighFive::DataSpace::From(ids));
-    }
-    auto ids_dataset = file.getDataSet("ids");
-    ids_dataset.write(ids);
-
-    if (!file.exist("ids_to")) {
-      file.createDataSet<std::string>("ids_to",
-                                      HighFive::DataSpace::From(ids_to));
-    }
-    auto ids_to_dataset = file.getDataSet("ids_to");
-    ids_to_dataset.write(ids_to);
-
-    if (!file.exist("distances")) {
-      file.createGroup("distances");
-    }
-    auto distance_group = file.getGroup("distances");
-
     auto group_name = get_group_name(distance_name_with_args, arguments);
 
-    std::cout << group_name << std::endl;
+    if (!file.exist(group_name)) {
+      file.createGroup(group_name);
+    }
+    auto distance_group = file.getGroup(group_name);
 
-    if (!distance_group.exist(group_name)) {
+    if (!distance_group.exist("distances")) {
       std::vector<size_t> dims{trees.size(), trees_to.size()};
-      distance_group.createDataSet<double>(group_name,
+      distance_group.createDataSet<double>("distances",
                                            HighFive::DataSpace(dims));
     }
 
-    auto distance_data_set = distance_group.getDataSet(group_name);
+    auto distance_data_set = distance_group.getDataSet("distances");
     distance_data_set.write(distances);
   }
 
