@@ -314,12 +314,6 @@ std::string get_filename(std::filesystem::path path){
   }
 }
 
-std::string get_group_name(std::string distance_name_with_args, input_arguments arguments){ 
-  auto ret_str = "-set-size-" + std::to_string(arguments.set_size); 
-  auto in_data = get_filename(arguments.filepath);
-  return distance_name_with_args + "-" + in_data + ret_str; 
-}
-
 int main(int argc, char *argv[]) {
   input_arguments arguments = parse_cli_arguments(argc, argv);
   const auto [distance_fun, distance_name_with_args] =
@@ -350,12 +344,10 @@ int main(int argc, char *argv[]) {
     std::cout << "Writing to file..." << std::endl;
     HighFive::File file{arguments.scores, HighFive::File::OpenOrCreate};
 
-    auto group_name = get_group_name(distance_name_with_args, arguments);
-
-    if (!file.exist(group_name)) {
-      file.createGroup(group_name);
+    if (!file.exist("distances")) {
+      file.createGroup("distances");
     }
-    auto distance_group = file.getGroup(group_name);
+    auto distance_group = file.getGroup("distances");
 
     if (!distance_group.exist("distances")) {
       std::vector<size_t> dims{trees.size(), trees_to.size()};
