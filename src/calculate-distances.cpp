@@ -333,12 +333,12 @@ int main(int argc, char *argv[]) {
       calculate_distances(trees, trees_to, arguments, distance_fun);
 
   if (arguments.scores.empty()) {
-    for (int i = 0; i < trees.size(); i++) {
-      for (int j = 0; j < trees_to.size(); j++) {
-        std::cout << distances(i, j) << " ";
-      }
-      std::cout << std::endl;
-    }
+    //for (int i = 0; i < trees.size(); i++) {
+    //  for (int j = 0; j < trees_to.size(); j++) {
+    //    std::cout << distances(i, j) << " ";
+    //  }
+    //  std::cout << std::endl;
+    //}
   } else if (arguments.scores.extension() == ".h5" ||
              arguments.scores.extension() == ".hdf5") {
     std::cout << "Writing to file..." << std::endl;
