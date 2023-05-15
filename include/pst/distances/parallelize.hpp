@@ -16,6 +16,32 @@ namespace pst::parallelize {
 
 enum ExecutionStrategy { parallel, sequential };
 
+std::vector<std::tuple<size_t, size_t>> get_bounds(size_t size, int requested_cores) {
+  const size_t processor_count = std::thread::hardware_concurrency();
+  size_t used_cores = 1;
+  if(requested_cores > size){
+    used_cores = size;
+  } else if(requested_cores <= processor_count){
+      used_cores = requested_cores;
+  } else {
+    used_cores = processor_count;
+  }
+  std::vector<std::tuple<size_t, size_t>> bounds_per_thread{};
+  float values_per_thread = float(size) / float(used_cores);
+
+  auto limit = std::min(used_cores, size);
+  for (size_t i = 0; i < limit; i++) {
+    size_t start_index = std::floor(values_per_thread * i);
+    size_t stop_index = std::floor(values_per_thread * (i + 1.0));
+    if (i == (limit - 1)) {
+      stop_index = size;
+    }
+    bounds_per_thread.emplace_back(start_index, stop_index);
+  }
+
+  return bounds_per_thread;
+}
+
 std::vector<std::tuple<size_t, size_t>> get_bounds(size_t size) {
   const size_t processor_count = std::thread::hardware_concurrency();
   std::vector<std::tuple<size_t, size_t>> bounds_per_thread{};
@@ -34,6 +60,21 @@ std::vector<std::tuple<size_t, size_t>> get_bounds(size_t size) {
   return bounds_per_thread;
 }
 
+void parallelize(size_t size, const std::function<void(size_t, size_t)> &fun, int requested_cores) {
+  std::vector<std::thread> threads{};
+
+  auto bounds = get_bounds(size, requested_cores);
+  for (auto &[start_index, stop_index] : bounds) {
+    threads.emplace_back(fun, start_index, stop_index);
+  }
+
+  for (auto &thread : threads) {
+    if (thread.joinable()) {
+      thread.join();
+    }
+  }
+}
+
 void parallelize(size_t size, const std::function<void(size_t, size_t)> &fun) {
   std::vector<std::thread> threads{};
 
@@ -47,6 +88,31 @@ void parallelize(size_t size, const std::function<void(size_t, size_t)> &fun) {
       thread.join();
     }
   }
+}
+
+void parallelize_with_progress(
+    size_t size,
+    const std::function<void(
+        size_t, size_t,
+        indicators::DynamicProgress<indicators::BlockProgressBar> &)> &fun, int requested_cores) {
+  std::vector<std::thread> threads{};
+
+  indicators::DynamicProgress<indicators::BlockProgressBar> bars{};
+  bars.set_option(indicators::option::HideBarWhenComplete{false});
+
+//  indicators::show_console_cursor(false);
+  setenv("DISPLAY", "0", 0);
+  auto bounds = get_bounds(size, requested_cores);
+  for (auto &[start_index, stop_index] : bounds) {
+    threads.emplace_back(fun, start_index, stop_index, std::ref(bars));
+  }
+
+  for (auto &thread : threads) {
+    if (thread.joinable()) {
+      thread.join();
+    }
+  }
+//  indicators::show_console_cursor(true);
 }
 
 void parallelize_with_progress(

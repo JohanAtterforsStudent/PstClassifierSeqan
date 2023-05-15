@@ -42,6 +42,7 @@ struct input_arguments {
   std::filesystem::path scores{""};
   double pseudo_count_amount{1.0};
   int set_size{-1};
+  int requested_cores{1};
 };
 
 input_arguments parse_cli_arguments(int argc, char *argv[]) {
@@ -79,6 +80,9 @@ input_arguments parse_cli_arguments(int argc, char *argv[]) {
                     "'nll', and 'kl'.");
   parser.add_option(arguments.background_order, 'b', "background-order",
                     "Length of background in some distance calculations.");
+
+  parser.add_option(arguments.requested_cores, 'c', "cores",
+                    "Number of cores to utilize; default 1, sequential.");
 
   try {
     parser.parse();
@@ -290,7 +294,7 @@ matrix_t calculate_distances(
       calculate_vector_slice(start_index, stop_index, std::ref(distances),
                              std::ref(vectors), distance_fun);
     };
-    pst::parallelize::parallelize(trees.size(), fun);
+    pst::parallelize::parallelize(trees.size(), fun, arguments.requested_cores);
 
   } else {
     auto fun =
@@ -300,7 +304,7 @@ matrix_t calculate_distances(
                                         std::ref(distances), std::ref(trees),
                                         std::ref(trees_to), distance_fun, bars);
         };
-    pst::parallelize::parallelize_with_progress(trees.size(), fun);
+    pst::parallelize::parallelize_with_progress(trees.size(), fun, arguments.requested_cores);
   }
 
   return distances;
